@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Environment
+.env
+.env.*
+!.env.example
+!frontend/.env.local.example
+
+# Generated crawler data
+status/*.json
+storage/jobs/
+storage/wrangler/uploads/
+storage/wrangler/edited/
