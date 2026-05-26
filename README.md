@@ -1,4 +1,4 @@
-# Data Engineer Tool
+# Datana
 
 A Next.js and FastAPI workspace for crawling social comment data and shaping stored files
 for further analysis. It implements TikTok and Reddit comment collection, preserves the
