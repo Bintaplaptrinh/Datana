@@ -10,7 +10,8 @@ Facebook and X as visible expansion points.
 - Data Wrangler with an upper data editor and lower file/control tray.
 - CSV table editing plus raw JSON, JSONL, and text editing.
 - Job-labeled file selection for repeated crawl artifacts such as `raw_comments.json`.
-- Merge stored files of the same format, with CSV header validation.
+- Opaque, scrollable selector menus for browsing large stored-file and field lists.
+- Merge stored files of the same format, with CSV header and JSON shape validation.
 - Simple saved-file EDA for CSV, JSON, and JSONL with Tremor-style charts.
 - Upload supported source files or reopen crawl, merged, and edited output stored by the system.
 - Configurable metadata with `global` and `pairwise` context output modes.
@@ -56,8 +57,10 @@ Open the `Wrangler` view to work with system files. CSV sources are displayed as
 editable table; JSON, JSONL, and text sources use a raw editor. Uploaded originals are
 kept in `storage/wrangler/uploads/`, while saves create a new copy in
 `storage/wrangler/edited/`. Crawl results from `storage/jobs/` are shown with their job
-id in the source selector. Select multiple compatible sources to merge them into
-`storage/wrangler/merged/`; CSV merges require matching headers.
+id in the source selector. Long selectors use a solid, scrollable menu so similarly
+named job artifacts stay readable. Select multiple compatible sources to merge them
+into `storage/wrangler/merged/`; CSV merges require matching headers and JSON merges
+require matching top-level object or array shape.
 
 Opening a saved CSV, JSON, or JSONL file loads its EDA summary below the editor:
 record/field counts, missing-value completeness, field profiles, and a selectable
