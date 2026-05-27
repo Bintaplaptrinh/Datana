@@ -9,7 +9,10 @@ Facebook and X as visible expansion points.
 
 - Data Wrangler with an upper data editor and lower file/control tray.
 - CSV table editing plus raw JSON, JSONL, and text editing.
-- Upload supported source files or reopen crawl and edited output stored by the system.
+- Job-labeled file selection for repeated crawl artifacts such as `raw_comments.json`.
+- Merge stored files of the same format, with CSV header validation.
+- Simple saved-file EDA for CSV, JSON, and JSONL with Tremor-style charts.
+- Upload supported source files or reopen crawl, merged, and edited output stored by the system.
 - Configurable metadata with `global` and `pairwise` context output modes.
 - Persistent run state in `status/` and generated data/logs in `storage/jobs/<job_id>/`.
 
@@ -22,6 +25,7 @@ status/                  Latest persisted JSON state for each job
 storage/jobs/<job_id>/   Raw data, exports, and pipeline.log
 storage/wrangler/uploads/ Uploaded CSV, JSON, JSONL, and TXT source files
 storage/wrangler/edited/ Saved edited copies from Data Wrangler
+storage/wrangler/merged/ Saved merged files from Data Wrangler
 ```
 
 ## Run Locally
@@ -51,8 +55,13 @@ Open `http://localhost:3000`. The frontend defaults to
 Open the `Wrangler` view to work with system files. CSV sources are displayed as an
 editable table; JSON, JSONL, and text sources use a raw editor. Uploaded originals are
 kept in `storage/wrangler/uploads/`, while saves create a new copy in
-`storage/wrangler/edited/`. Crawl results from `storage/jobs/` are available in the same
-source selector.
+`storage/wrangler/edited/`. Crawl results from `storage/jobs/` are shown with their job
+id in the source selector. Select multiple compatible sources to merge them into
+`storage/wrangler/merged/`; CSV merges require matching headers.
+
+Opening a saved CSV, JSON, or JSONL file loads its EDA summary below the editor:
+record/field counts, missing-value completeness, field profiles, and a selectable
+distribution chart. JSON crawl outputs are interpreted as comment records for analysis.
 
 ## Output Modes
 

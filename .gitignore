@@ -20,3 +20,4 @@ status/*.json
 storage/jobs/
 storage/wrangler/uploads/
 storage/wrangler/edited/
+storage/wrangler/merged/

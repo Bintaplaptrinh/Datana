@@ -11,7 +11,8 @@ ContextMode = Literal["global", "pairwise"]
 JobStatus = Literal["queued", "running", "succeeded", "failed"]
 NodeStatus = Literal["pending", "running", "succeeded", "failed"]
 DataFormat = Literal["csv", "json", "jsonl", "text"]
-FileOrigin = Literal["crawled", "uploaded", "edited"]
+FileOrigin = Literal["crawled", "uploaded", "edited", "merged"]
+AnalysisKind = Literal["number", "text", "boolean", "mixed"]
 
 
 def utc_now() -> str:
@@ -74,6 +75,7 @@ class WranglerFileRecord(BaseModel):
     name: str
     format: DataFormat
     origin: FileOrigin
+    job_id: str | None = None
     size: int
     modified_at: str
     relative_path: str
@@ -92,3 +94,34 @@ class WranglerUploadRequest(BaseModel):
 class WranglerEditRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     content: str = Field(max_length=10_000_000)
+
+
+class WranglerMergeRequest(BaseModel):
+    file_ids: list[str] = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=1, max_length=255)
+
+
+class AnalysisBucket(BaseModel):
+    label: str
+    count: int
+
+
+class AnalysisField(BaseModel):
+    name: str
+    kind: AnalysisKind
+    non_empty: int
+    missing: int
+    unique: int
+    minimum: float | None = None
+    maximum: float | None = None
+    average: float | None = None
+    distribution: list[AnalysisBucket] = Field(default_factory=list)
+
+
+class WranglerAnalysis(BaseModel):
+    file: WranglerFileRecord
+    record_count: int
+    field_count: int
+    missing_values: int
+    numeric_fields: int
+    fields: list[AnalysisField] = Field(default_factory=list)

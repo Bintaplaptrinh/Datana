@@ -11,9 +11,11 @@ from .models import (
     JobRecord,
     MetadataUpdate,
     ProviderInfo,
+    WranglerAnalysis,
     WranglerEditRequest,
     WranglerFileContent,
     WranglerFileRecord,
+    WranglerMergeRequest,
     WranglerUploadRequest,
 )
 from .service import PROVIDER_INFO, manager
@@ -127,3 +129,22 @@ def save_wrangler_edit(file_id: str, request: WranglerEditRequest) -> WranglerFi
     if not content:
         raise HTTPException(status_code=404, detail="Data file not found.")
     return content
+
+
+@app.post("/api/wrangler/merges", response_model=WranglerFileContent, status_code=201)
+def merge_wrangler_files(request: WranglerMergeRequest) -> WranglerFileContent:
+    try:
+        return wrangler.merge(request)
+    except WranglerError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/wrangler/files/{file_id}/analysis", response_model=WranglerAnalysis)
+def analyze_wrangler_file(file_id: str) -> WranglerAnalysis:
+    try:
+        analysis = wrangler.analyze(file_id)
+    except WranglerError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Data file not found.")
+    return analysis

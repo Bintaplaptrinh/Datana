@@ -2,7 +2,8 @@ export type SourceName = "tiktok" | "reddit" | "facebook" | "x";
 export type ContextMode = "global" | "pairwise";
 export type Status = "queued" | "running" | "succeeded" | "failed";
 export type DataFormat = "csv" | "json" | "jsonl" | "text";
-export type FileOrigin = "crawled" | "uploaded" | "edited";
+export type FileOrigin = "crawled" | "uploaded" | "edited" | "merged";
+export type AnalysisKind = "number" | "text" | "boolean" | "mixed";
 
 export interface ProviderInfo {
   key: SourceName;
@@ -54,6 +55,7 @@ export interface WranglerFileRecord {
   name: string;
   format: DataFormat;
   origin: FileOrigin;
+  job_id?: string | null;
   size: number;
   modified_at: string;
   relative_path: string;
@@ -62,4 +64,30 @@ export interface WranglerFileRecord {
 export interface WranglerFileContent {
   file: WranglerFileRecord;
   content: string;
+}
+
+export interface AnalysisBucket {
+  label: string;
+  count: number;
+}
+
+export interface AnalysisField {
+  name: string;
+  kind: AnalysisKind;
+  non_empty: number;
+  missing: number;
+  unique: number;
+  minimum?: number | null;
+  maximum?: number | null;
+  average?: number | null;
+  distribution: AnalysisBucket[];
+}
+
+export interface WranglerAnalysis {
+  file: WranglerFileRecord;
+  record_count: number;
+  field_count: number;
+  missing_values: number;
+  numeric_fields: number;
+  fields: AnalysisField[];
 }

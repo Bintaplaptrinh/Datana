@@ -232,6 +232,81 @@
   padding: 26px 28px;
 }
 
+.analyticsPanel {
+  padding: 28px;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(125px, 1fr));
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.metricGrid div {
+  padding: 14px 16px;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+}
+
+.metricGrid strong {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.metricGrid span {
+  color: #657080;
+  font-size: 0.79rem;
+}
+
+.analysisHint {
+  margin-bottom: 17px !important;
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.6fr) minmax(265px, 0.85fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.chartCard {
+  min-height: 280px;
+  padding: 15px 17px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.profileTable {
+  max-height: 285px;
+  border-radius: 19px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.profileTable :global(.MuiTableCell-head) {
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.mergeBox {
+  display: grid;
+  gap: 12px;
+}
+
+.selectMenuPaper {
+  max-height: min(360px, calc(100vh - 96px)) !important;
+  overflow-y: auto !important;
+  background: #fff !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  border: 1px solid rgba(92, 103, 122, 0.16);
+  box-shadow: 0 16px 38px rgba(47, 57, 74, 0.18) !important;
+}
+
 .emptyEditor {
   min-height: 355px;
   border-radius: 23px;
@@ -427,6 +502,10 @@
     grid-template-columns: repeat(2, minmax(280px, 1fr));
   }
 
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+
   .wide {
     grid-column: span 2;
   }
@@ -470,8 +549,13 @@
   }
 
   .editorPanel,
+  .analyticsPanel,
   .optionsPanel {
     padding: 18px;
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 
   .tableActions {

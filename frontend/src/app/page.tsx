@@ -14,6 +14,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CssBaseline,
   Divider,
@@ -38,9 +39,11 @@ import {
   createTheme,
 } from "@mui/material";
 import styles from "./page.module.css";
+import { TremorBarChart, TremorDonutChart } from "@/components/TremorCharts";
 import { API_ROOT, dataApi } from "@/lib/api";
 import { parseCsv, serializeCsv } from "@/lib/csv";
 import {
+  AnalysisField,
   ContextMode,
   CrawlRequest,
   JobRecord,
@@ -50,6 +53,7 @@ import {
   Status,
   WranglerFileContent,
   WranglerFileRecord,
+  WranglerAnalysis,
 } from "@/lib/types";
 
 type View = "wrangler" | "crawl";
@@ -63,6 +67,9 @@ const panelLabels: Record<PanelId, string> = {
   runs: "Task status",
   logs: "Execution logs",
   storage: "Context and output",
+};
+const selectMenuProps = {
+  slotProps: { paper: { className: styles.selectMenuPaper } },
 };
 
 const theme = createTheme({
@@ -248,6 +255,7 @@ function ConfigurePanel({
             labelId="provider"
             label="Data source"
             value={source}
+            MenuProps={selectMenuProps}
             onChange={(event) => setSource(event.target.value as SourceName)}
           >
             {providers.map((provider) => (
@@ -472,6 +480,28 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function fileLabel(file: WranglerFileRecord): string {
+  return file.job_id ? `Job ${file.job_id} / ${file.name}` : `${file.origin} / ${file.name}`;
+}
+
+function mergedName(file: WranglerFileRecord): string {
+  return `merged.${file.format === "text" ? "txt" : file.format}`;
+}
+
+function formatMetric(value?: number | null): string {
+  return value === undefined || value === null
+    ? "-"
+    : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+function preferredField(analysis: WranglerAnalysis): AnalysisField | undefined {
+  return (
+    analysis.fields.find((field) => field.kind === "number" && !field.name.toLowerCase().includes("created_at")) ??
+    analysis.fields.find((field) => field.distribution.length > 1) ??
+    analysis.fields[0]
+  );
+}
+
 function CsvEditor({ content, onChange }: { content: string; onChange: (content: string) => void }) {
   const rows = useMemo(() => parseCsv(content), [content]);
   const headers = rows[0] ?? [""];
@@ -543,6 +573,108 @@ function CsvEditor({ content, onChange }: { content: string; onChange: (content:
   );
 }
 
+function AnalyticsPanel({
+  file,
+  analysis,
+  loading,
+  fieldName,
+  onFieldChange,
+}: {
+  file: WranglerFileRecord;
+  analysis?: WranglerAnalysis;
+  loading: boolean;
+  fieldName: string;
+  onFieldChange: (value: string) => void;
+}) {
+  const field = analysis?.fields.find((item) => item.name === fieldName);
+  const completeValues = analysis
+    ? analysis.record_count * analysis.field_count - analysis.missing_values
+    : 0;
+  return (
+    <Paper className={`${styles.panel} ${styles.analyticsPanel}`} elevation={0}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Box>
+          <Typography className={styles.sectionLabel}>SIMPLE DATA ANALYSIS</Typography>
+          <Typography variant="h5">EDA / {fileLabel(file)}</Typography>
+        </Box>
+        <Chip label={`${file.format.toUpperCase()} saved file`} variant="outlined" />
+      </Stack>
+      {loading && <Typography color="text.secondary">Analyzing stored records...</Typography>}
+      {!loading && analysis && (
+        <>
+          <Box className={styles.metricGrid}>
+            <Box><strong>{formatMetric(analysis.record_count)}</strong><span>records</span></Box>
+            <Box><strong>{formatMetric(analysis.field_count)}</strong><span>fields</span></Box>
+            <Box><strong>{formatMetric(analysis.missing_values)}</strong><span>missing values</span></Box>
+            <Box><strong>{formatMetric(analysis.numeric_fields)}</strong><span>numeric fields</span></Box>
+          </Box>
+          <Typography variant="body2" color="text.secondary" className={styles.analysisHint}>
+            EDA follows the selected saved file. Save edited content as a copy to analyze the new version.
+          </Typography>
+          <Box className={styles.chartGrid}>
+            <Box className={styles.chartCard}>
+              <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                <Typography variant="subtitle2">Distribution</Typography>
+                <FormControl size="small" sx={{ minWidth: 190 }}>
+                  <InputLabel id="analysis-field">Field</InputLabel>
+                  <Select
+                    labelId="analysis-field"
+                    label="Field"
+                    value={fieldName}
+                    MenuProps={selectMenuProps}
+                    onChange={(event) => onFieldChange(event.target.value)}
+                  >
+                    {analysis.fields.map((item) => (
+                      <MenuItem key={item.name} value={item.name}>
+                        {item.name} ({item.kind})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+              {field?.distribution.length ? (
+                <TremorBarChart data={field.distribution} />
+              ) : (
+                <Typography color="text.secondary">No values available for this field.</Typography>
+              )}
+            </Box>
+            <Box className={styles.chartCard}>
+              <Typography variant="subtitle2">Data completeness</Typography>
+              <TremorDonutChart complete={completeValues} missing={analysis.missing_values} />
+            </Box>
+          </Box>
+          <TableContainer className={styles.profileTable}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Field</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell align="right">Filled</TableCell>
+                  <TableCell align="right">Missing</TableCell>
+                  <TableCell align="right">Distinct</TableCell>
+                  <TableCell align="right">Average</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {analysis.fields.map((item) => (
+                  <TableRow key={item.name}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell><Chip size="small" variant="outlined" label={item.kind} /></TableCell>
+                    <TableCell align="right">{item.non_empty}</TableCell>
+                    <TableCell align="right">{item.missing}</TableCell>
+                    <TableCell align="right">{item.unique}</TableCell>
+                    <TableCell align="right">{formatMetric(item.average)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
+    </Paper>
+  );
+}
+
 function DataWrangler({ onError }: { onError: (message: string) => void }) {
   const uploadInput = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<WranglerFileRecord[]>([]);
@@ -551,6 +683,11 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
   const [editName, setEditName] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
+  const [analysis, setAnalysis] = useState<WranglerAnalysis>();
+  const [analysisBusy, setAnalysisBusy] = useState(false);
+  const [analysisField, setAnalysisField] = useState("");
+  const [mergeIds, setMergeIds] = useState<string[]>([]);
+  const [mergeName, setMergeName] = useState("merged.json");
 
   const openFile = useCallback(
     async (fileId: string) => {
@@ -560,6 +697,26 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
         setCurrent(file);
         setDraft(file.content);
         setEditName(suggestedEditName(file.file));
+        setAnalysis(undefined);
+        if (file.file.format !== "text") {
+          setAnalysisBusy(true);
+          try {
+            const summary = await dataApi.wranglerAnalysis(fileId);
+            setAnalysis(summary);
+            setAnalysisField((selected) =>
+              summary.fields.some((field) => field.name === selected)
+                ? selected
+                : (preferredField(summary)?.name ?? ""),
+            );
+          } catch (reason) {
+            onError(reason instanceof Error ? reason.message : "Unable to analyze data file.");
+          } finally {
+            setAnalysisBusy(false);
+          }
+        } else {
+          setAnalysisField("");
+          setAnalysisBusy(false);
+        }
       } catch (reason) {
         onError(reason instanceof Error ? reason.message : "Unable to load data file.");
       } finally {
@@ -630,6 +787,23 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
     }
   }
 
+  async function mergeFiles() {
+    if (mergeIds.length < 2) return;
+    setBusy(true);
+    setNotice(undefined);
+    try {
+      const merged = await dataApi.mergeWranglerFiles(mergeIds, mergeName);
+      setMergeIds([]);
+      setMergeName("merged.json");
+      await refreshFiles(merged.file.id);
+      setNotice(`Merged ${mergeIds.length} files into ${merged.file.name}.`);
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : "Unable to merge files.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function formatJson() {
     try {
       setDraft(`${JSON.stringify(JSON.parse(draft), null, 2)}\n`);
@@ -638,6 +812,9 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
       onError("The current JSON is invalid and cannot be formatted.");
     }
   }
+
+  const selectedMergeFiles = files.filter((file) => mergeIds.includes(file.id));
+  const mergeFormat = selectedMergeFiles[0]?.format;
 
   return (
     <section className={styles.wranglerLayout}>
@@ -650,7 +827,7 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
           {current && (
             <Stack direction="row" spacing={1}>
               <Chip variant="outlined" label={current.file.format.toUpperCase()} />
-              <Chip variant="outlined" label={current.file.origin} />
+              <Chip variant="outlined" label={current.file.job_id ? `Job ${current.file.job_id}` : current.file.origin} />
             </Stack>
           )}
         </Stack>
@@ -678,6 +855,16 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
         )}
       </Paper>
 
+      {current && current.file.format !== "text" && (
+        <AnalyticsPanel
+          file={current.file}
+          analysis={analysis}
+          loading={analysisBusy}
+          fieldName={analysisField}
+          onFieldChange={setAnalysisField}
+        />
+      )}
+
       <Paper className={`${styles.panel} ${styles.optionsPanel}`} elevation={0}>
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Box>
@@ -702,21 +889,75 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
               labelId="stored-file"
               label="System files"
               value={current?.file.id ?? ""}
+              MenuProps={selectMenuProps}
               onChange={(event) => void openFile(event.target.value)}
               displayEmpty
             >
               {!files.length && <MenuItem value="">No saved or crawled files available</MenuItem>}
               {files.map((file) => (
                 <MenuItem key={file.id} value={file.id}>
-                  {file.name} / {file.origin} / {formatSize(file.size)}
+                  {fileLabel(file)} / {formatSize(file.size)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
           <Typography variant="body2" color="text.secondary">
-            Select files crawled by this system or previously edited here. Upload supports CSV, JSON,
-            JSONL and raw text only.
+            Crawl artifacts are sorted by job id so repeated output names stay identifiable. Upload supports
+            CSV, JSON, JSONL and raw text only.
           </Typography>
+          <Divider />
+          <Box className={styles.mergeBox}>
+            <Typography variant="subtitle2">Merge files</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Select two or more files in one format. CSV headers and JSON top-level shapes must match.
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel id="merge-files">Source files</InputLabel>
+              <Select
+                labelId="merge-files"
+                label="Source files"
+                multiple
+                value={mergeIds}
+                MenuProps={selectMenuProps}
+                onChange={(event) => {
+                  const values =
+                    typeof event.target.value === "string"
+                      ? event.target.value.split(",")
+                      : event.target.value;
+                  setMergeIds(values);
+                  const first = files.find((file) => file.id === values[0]);
+                  if (first) setMergeName(mergedName(first));
+                }}
+                renderValue={(selected) => `${selected.length} files selected`}
+              >
+                {files.map((file) => (
+                  <MenuItem
+                    key={`merge-${file.id}`}
+                    value={file.id}
+                    disabled={Boolean(mergeFormat && file.format !== mergeFormat)}
+                  >
+                    <Checkbox checked={mergeIds.includes(file.id)} />
+                    {fileLabel(file)} / {file.format.toUpperCase()}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <TextField
+                fullWidth
+                label="Merged output name"
+                value={mergeName}
+                onChange={(event) => setMergeName(event.target.value)}
+              />
+              <Button
+                variant="contained"
+                onClick={() => void mergeFiles()}
+                disabled={busy || mergeIds.length < 2}
+              >
+                Merge selected
+              </Button>
+            </Stack>
+          </Box>
           <Divider />
           {current && (
             <>

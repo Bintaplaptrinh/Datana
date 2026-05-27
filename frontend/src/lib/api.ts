@@ -3,6 +3,7 @@ import {
   CrawlRequest,
   JobRecord,
   ProviderInfo,
+  WranglerAnalysis,
   WranglerFileContent,
   WranglerFileRecord,
 } from "./types";
@@ -54,4 +55,11 @@ export const dataApi = {
       method: "POST",
       body: JSON.stringify({ name, content }),
     }),
+  mergeWranglerFiles: (fileIds: string[], name: string) =>
+    request<WranglerFileContent>("/wrangler/merges", {
+      method: "POST",
+      body: JSON.stringify({ file_ids: fileIds, name }),
+    }),
+  wranglerAnalysis: (id: string) =>
+    request<WranglerAnalysis>(`/wrangler/files/${id}/analysis`),
 };
