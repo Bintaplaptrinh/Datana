@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
 import {
   Alert,
   Box,
@@ -38,6 +39,7 @@ import {
   Typography,
   createTheme,
 } from "@mui/material";
+import posterLogo from "@/asset/poster_logo.png";
 import styles from "./page.module.css";
 import { TremorBarChart, TremorDonutChart } from "@/components/TremorCharts";
 import { API_ROOT, dataApi } from "@/lib/api";
@@ -75,12 +77,12 @@ const selectMenuProps = {
 const theme = createTheme({
   palette: {
     mode: "light",
-    primary: { main: "#ffffff", contrastText: "#15171b" },
-    secondary: { main: "#355df5", contrastText: "#ffffff" },
-    success: { main: "#2caa8c" },
-    error: { main: "#e15c75" },
-    text: { primary: "#16191f", secondary: "#626b78" },
-    background: { default: "#dbe5e5", paper: "rgba(255,255,255,.53)" },
+    primary: { main: "#2563eb", contrastText: "#ffffff" },
+    secondary: { main: "#0f172a", contrastText: "#ffffff" },
+    success: { main: "#10b981" },
+    error: { main: "#ef4444" },
+    text: { primary: "#172033", secondary: "#64748b" },
+    background: { default: "#eef2f7", paper: "#ffffff" },
   },
   typography: {
     fontFamily: '"Google Sans Flex", "Google Sans", Arial, sans-serif',
@@ -97,14 +99,14 @@ const theme = createTheme({
           borderRadius: 999,
           paddingInline: 20,
           "&.MuiButton-containedPrimary": {
-            boxShadow: "0 12px 26px rgba(82, 93, 115, .15), inset 0 1px 0 rgba(255,255,255,.9)",
+            boxShadow: "0 12px 26px rgba(37, 99, 235, .22)",
           },
         },
       },
     },
     MuiChip: { styleOverrides: { root: { borderRadius: 999 } } },
     MuiOutlinedInput: {
-      styleOverrides: { root: { background: "rgba(255,255,255,.46)", borderRadius: 16 } },
+      styleOverrides: { root: { background: "#ffffff", borderRadius: 16 } },
     },
     MuiTextField: { defaultProps: { size: "small" } },
     MuiFormControl: { defaultProps: { size: "small" } },
@@ -884,7 +886,9 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
         </Stack>
         <Stack spacing={2}>
           <FormControl fullWidth>
-            <InputLabel id="stored-file">System files</InputLabel>
+            <InputLabel id="stored-file" shrink>
+              System files
+            </InputLabel>
             <Select
               labelId="stored-file"
               label="System files"
@@ -892,6 +896,12 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
               MenuProps={selectMenuProps}
               onChange={(event) => void openFile(event.target.value)}
               displayEmpty
+              renderValue={(selected) => {
+                const selectedId = String(selected);
+                if (!selectedId) return "No saved or crawled files available";
+                const file = files.find((item) => item.id === selectedId);
+                return file ? `${fileLabel(file)} / ${formatSize(file.size)}` : selectedId;
+              }}
             >
               {!files.length && <MenuItem value="">No saved or crawled files available</MenuItem>}
               {files.map((file) => (
@@ -988,40 +998,143 @@ function DataWrangler({ onError }: { onError: (message: string) => void }) {
   );
 }
 
-function Hero({ view, setView, crawls, files }: { view: View; setView: (view: View) => void; crawls: number; files: number }) {
+function Sidebar({
+  view,
+  setView,
+  connected,
+}: {
+  view: View;
+  setView: (view: View) => void;
+  connected: boolean;
+}) {
+  const items: { id: View | "sources" | "exports"; label: string; icon: string; disabled?: boolean }[] = [
+    { id: "wrangler", label: "Data Wrangler", icon: "table" },
+    { id: "crawl", label: "Crawl Studio", icon: "account_tree" },
+    { id: "sources", label: "Sources", icon: "hub", disabled: true },
+    { id: "exports", label: "Exports", icon: "ios_share", disabled: true },
+  ];
   return (
-    <section className={styles.hero}>
-      <Box className={styles.heroCopy}>
-        <Typography className={styles.sectionLabel}>DATA PIPELINE WORKSPACE</Typography>
-        <Typography variant="h2">
-          Make social data
-          <br />
-          ready to use.
-        </Typography>
-        <Typography className={styles.heroText}>
-          Crawl public conversations, inspect raw datasets and refine metadata through a quiet,
-          flexible workspace.
-        </Typography>
-        <Stack direction="row" spacing={1.2}>
-          <Button variant="contained" size="large" onClick={() => setView("wrangler")}>
-            Open Wrangler
+    <aside className={styles.sidebar}>
+      <Box>
+        <Box className={styles.logoMark}>
+          <Image src={posterLogo} alt="Datana" width={176} height={98} className={styles.logoImage} priority />
+        </Box>
+        <Typography className={styles.brandSubtext}>Data engineering workbench</Typography>
+      </Box>
+      <nav className={styles.sidebarNav}>
+        <Typography className={styles.sidebarLabel}>Workspace</Typography>
+        {items.map((item) => (
+          <Button
+            key={item.id}
+            className={item.id === view ? styles.activeNav : ""}
+            disabled={item.disabled}
+            onClick={() => !item.disabled && setView(item.id as View)}
+            startIcon={<Symbol>{item.icon}</Symbol>}
+            aria-label={item.label}
+          >
+            <span className={styles.navText}>{item.label}</span>
           </Button>
-          <Button variant="outlined" size="large" onClick={() => setView("crawl")}>
-            Crawl data
-          </Button>
+        ))}
+      </nav>
+      <Box className={styles.sidebarCard}>
+        <Typography variant="caption">API status</Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 1 }}>
+          <Box className={`${styles.statusDot} ${connected ? styles.connected : styles.offline}`} />
+          <Typography variant="body2">{connected ? "Connected" : "Offline"}</Typography>
         </Stack>
       </Box>
-      <Box className={styles.heroVisual}>
-        <Box className={styles.orb} />
-        <Box className={styles.visualSheet}>
-          <Typography variant="caption">Current studio</Typography>
-          <Typography variant="h5">{view === "wrangler" ? "Data Wrangler" : "Crawl Studio"}</Typography>
-          <Stack direction="row" spacing={1} className={styles.statRow}>
-            <Box><strong>{files}</strong><span>files</span></Box>
-            <Box><strong>{crawls}</strong><span>runs</span></Box>
-          </Stack>
+    </aside>
+  );
+}
+
+function WorkspaceHeader({
+  view,
+  connected,
+  jobs,
+  selected,
+}: {
+  view: View;
+  connected: boolean;
+  jobs: JobRecord[];
+  selected?: JobRecord;
+}) {
+  const title = view === "wrangler" ? "Data Wrangler" : "Crawl Studio";
+  const subtitle =
+    view === "wrangler"
+      ? "Inspect, merge, edit, and profile stored datasets."
+      : "Collect social comments, attach context, and monitor pipeline runs.";
+  return (
+    <header className={styles.topbar}>
+      <Box>
+        <Typography className={styles.sectionLabel}>DATA WORKSPACE</Typography>
+        <Typography variant="h4">{title}</Typography>
+        <Typography color="text.secondary">{subtitle}</Typography>
+      </Box>
+      <Box className={styles.topbarActions}>
+        <Box className={styles.searchBox}>
+          <Symbol>search</Symbol>
+          <span>Search jobs, files, fields</span>
+        </Box>
+        <Chip
+          icon={<Symbol>{connected ? "cloud_done" : "cloud_off"}</Symbol>}
+          label={connected ? "Connected" : "Offline"}
+          className={styles.statusPill}
+        />
+        <Box className={styles.userBadge}>
+          <strong>{selected?.id.slice(0, 4).toUpperCase() ?? jobs[0]?.id.slice(0, 4).toUpperCase() ?? "DE"}</strong>
         </Box>
       </Box>
+    </header>
+  );
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: string;
+  label: string;
+  value: string | number;
+  detail: string;
+}) {
+  return (
+    <Paper className={styles.metricCard} elevation={0}>
+      <Box className={styles.metricIcon}>
+        <Symbol>{icon}</Symbol>
+      </Box>
+      <Box>
+        <Typography variant="caption">{label}</Typography>
+        <strong>{value}</strong>
+        <span>{detail}</span>
+      </Box>
+    </Paper>
+  );
+}
+
+function WorkspaceSummary({
+  jobs,
+  files,
+  selected,
+}: {
+  jobs: JobRecord[];
+  files: number;
+  selected?: JobRecord;
+}) {
+  const activeRuns = jobs.filter((job) => job.status === "queued" || job.status === "running").length;
+  const completedRuns = jobs.filter((job) => job.status === "succeeded").length;
+  return (
+    <section className={styles.summaryGrid}>
+      <MetricCard icon="folder_data" label="Stored files" value={files} detail="crawl, upload, edit, merge" />
+      <MetricCard icon="account_tree" label="Pipeline runs" value={jobs.length} detail={`${activeRuns} active`} />
+      <MetricCard icon="task_alt" label="Completed jobs" value={completedRuns} detail="ready for export or EDA" />
+      <MetricCard
+        icon="dataset"
+        label="Selected run"
+        value={selected?.id ?? "None"}
+        detail={selected ? `${selected.record_count} records / ${selected.status}` : "choose a run in Crawl Studio"}
+      />
     </section>
   );
 }
@@ -1137,51 +1250,37 @@ export default function Home() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <main className={styles.shell}>
-        <Paper className={styles.frame} elevation={0}>
-          <header className={styles.header}>
-            <Typography className={styles.brand}>Data Engineer Tool</Typography>
-            <nav className={styles.nav}>
-              <Button className={view === "wrangler" ? styles.activeNav : ""} onClick={() => setView("wrangler")}>
-                Wrangler
-              </Button>
-              <Button className={view === "crawl" ? styles.activeNav : ""} onClick={() => setView("crawl")}>
-                Crawl Studio
-              </Button>
-              <Button disabled>Sources</Button>
-              <Button disabled>Exports</Button>
-            </nav>
-            <Chip
-              icon={<Symbol>{connected ? "cloud_done" : "cloud_off"}</Symbol>}
-              label={connected ? "Connected" : "Offline"}
-              className={styles.statusPill}
-            />
-          </header>
-          <Hero view={view} setView={setView} crawls={jobs.length} files={fileCount} />
-        </Paper>
+      <main className={styles.appShell}>
+        <Sidebar view={view} setView={setView} connected={connected} />
+        <Box className={styles.workspace}>
+          <WorkspaceHeader view={view} connected={connected} jobs={jobs} selected={selected} />
+          <WorkspaceSummary jobs={jobs} files={fileCount} selected={selected} />
 
-        {error && (
-          <Alert severity="error" onClose={() => setError(undefined)} className={styles.alert}>
-            {error}
-          </Alert>
-        )}
+          {error && (
+            <Alert severity="error" onClose={() => setError(undefined)} className={styles.alert}>
+              {error}
+            </Alert>
+          )}
 
-        {view === "wrangler" ? (
-          <DataWrangler onError={reportError} />
-        ) : (
-          <Box className={styles.grid}>
-            {panels.map((panel) => (
-              <GlassPanel
-                id={panel}
-                key={panel}
-                wide={panel === "logs" || panel === "storage"}
-                onMove={movePanel}
-              >
-                {content[panel]}
-              </GlassPanel>
-            ))}
-          </Box>
-        )}
+          <section className={styles.workspaceBody}>
+            {view === "wrangler" ? (
+              <DataWrangler onError={reportError} />
+            ) : (
+              <Box className={styles.grid}>
+                {panels.map((panel) => (
+                  <GlassPanel
+                    id={panel}
+                    key={panel}
+                    wide={panel === "logs" || panel === "storage"}
+                    onMove={movePanel}
+                  >
+                    {content[panel]}
+                  </GlassPanel>
+                ))}
+              </Box>
+            )}
+          </section>
+        </Box>
       </main>
     </ThemeProvider>
   );

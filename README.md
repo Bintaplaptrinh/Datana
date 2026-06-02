@@ -7,7 +7,10 @@ Facebook and X as visible expansion points.
 
 ## Features
 
-- Data Wrangler with an upper data editor and lower file/control tray.
+- Professional data workbench UI with persistent navigation, KPI summary cards,
+  topbar status, and separate Data Wrangler and Crawl Studio workspaces.
+- Data Wrangler with a primary editor, right-side data controls, merge actions,
+  and full-width EDA results arranged by selected job/file.
 - CSV table editing plus raw JSON, JSONL, and text editing.
 - Job-labeled file selection for repeated crawl artifacts such as `raw_comments.json`.
 - Opaque, scrollable selector menus for browsing large stored-file and field lists.
@@ -53,18 +56,26 @@ Open `http://localhost:3000`. The frontend defaults to
 
 ## Data Wrangler
 
-Open the `Wrangler` view to work with system files. CSV sources are displayed as an
-editable table; JSON, JSONL, and text sources use a raw editor. Uploaded originals are
-kept in `storage/wrangler/uploads/`, while saves create a new copy in
-`storage/wrangler/edited/`. Crawl results from `storage/jobs/` are shown with their job
-id in the source selector. Long selectors use a solid, scrollable menu so similarly
-named job artifacts stay readable. Select multiple compatible sources to merge them
-into `storage/wrangler/merged/`; CSV merges require matching headers and JSON merges
+Open the `Data Wrangler` workspace to work with system files. CSV sources are
+displayed as an editable table; JSON, JSONL, and text sources use a raw editor.
+Uploaded originals are kept in `storage/wrangler/uploads/`, while saves create a
+new copy in `storage/wrangler/edited/`. Crawl results from `storage/jobs/` are
+shown with their job id in the source selector. Long selectors use a solid,
+scrollable menu so similarly named job artifacts stay readable. Select multiple
+compatible sources in the controls panel to merge them into
+`storage/wrangler/merged/`; CSV merges require matching headers and JSON merges
 require matching top-level object or array shape.
 
 Opening a saved CSV, JSON, or JSONL file loads its EDA summary below the editor:
 record/field counts, missing-value completeness, field profiles, and a selectable
 distribution chart. JSON crawl outputs are interpreted as comment records for analysis.
+
+## Crawl Studio
+
+Open the `Crawl Studio` workspace to configure new collection jobs, inspect the
+pipeline DAG, monitor run status, read execution logs, and review context/output
+storage for the selected job. Panels keep the existing drag-and-drop arrangement
+while using the same professional card system as the Wrangler workspace.
 
 ## Output Modes
 
